@@ -126,6 +126,12 @@ public static class Collider2DEx
                         break;
                 }
 
+                if (vertexs[0] == vertexs[vertexs.Count - 1])
+                {
+                    vertexs.RemoveAt(vertexs.Count - 1);
+                    break;
+                }
+
                 if (!haveAddedALine)
                     break;
             }
