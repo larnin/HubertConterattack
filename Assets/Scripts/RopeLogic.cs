@@ -208,6 +208,15 @@ public class RopeLogic : MonoBehaviour
             node = new NodeInfo(GetExtrudedIndex(body, rightIndex), bodyIndex, rightIndex, farestLeft);
         else node = new NodeInfo(GetExtrudedIndex(body, leftIndex), bodyIndex, leftIndex, farestLeft);
 
+        //If the end node go on a collider, the colliderVertexIndex switch between 2 positions and stack overflow
+        if (m_nodes.Count > 3 && node.colliderIndex == m_nodes[m_nodes.Count - 3].colliderIndex && node.colliderVertexIndex == m_nodes[m_nodes.Count - 3].colliderVertexIndex)
+        {
+            body.nodeNb--;
+            if (body.nodeNb <= 0)
+                m_bodies.Remove(body);
+            return;
+        }
+
         m_nodes.Insert(m_nodes.Count - 1, node);
 
         UpdateRope();
