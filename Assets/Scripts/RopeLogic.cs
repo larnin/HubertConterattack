@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Tilemaps;
 
+[RequireComponent(typeof(MeshRenderer))]
+[RequireComponent(typeof(MeshFilter))]
 public class RopeLogic : MonoBehaviour
 {
     [SerializeField] LayerMask m_collisionMask;
@@ -12,6 +14,10 @@ public class RopeLogic : MonoBehaviour
     [SerializeField] Vector2 m_start = Vector2.zero;
     [DraggablePoint2D]
     [SerializeField] Vector2 m_end = Vector2.zero;
+    [SerializeField] float m_width = 0.1f;
+
+    Mesh m_mesh;
+    MeshFilter m_meshFilter;
 
     class NodeInfo
     {
@@ -59,6 +65,10 @@ public class RopeLogic : MonoBehaviour
 
     void Start()
     {
+        m_mesh = new Mesh();
+
+        m_meshFilter = GetComponent<MeshFilter>();
+
         ResetRope();
     }
     
@@ -73,9 +83,9 @@ public class RopeLogic : MonoBehaviour
             m_nodes[m_nodes.Count - 1].pos = m_end;
             RemoveNodes();
             UpdateRope();
+            UpdateMesh();
         }
 
-        Display();
         DrawColliders();
     }
 
@@ -123,6 +133,7 @@ public class RopeLogic : MonoBehaviour
         m_nodes.Add(new NodeInfo(m_end));
 
         UpdateRope();
+        UpdateMesh();
     }
 
     void RemoveNodes()
@@ -252,5 +263,60 @@ public class RopeLogic : MonoBehaviour
 
         var dir = posP1 + posM1 - 2 * pos;
         return pos - dir.normalized * m_outDistance;
+    }
+
+    void UpdateMesh()
+    {
+        int nbVertices = m_nodes.Count * 2;
+        int nbTriangles = m_nodes.Count * 2 - 2;
+
+        Vector3[] vertices = new Vector3[nbVertices];
+        int[] tris = new int[nbTriangles * 3];
+
+        //vertices
+        for (int i = 0; i < m_nodes.Count; i++)
+        {
+            Vector2 dir = new Vector2();
+            if (i > 0)
+                dir += (m_nodes[i].pos - m_nodes[i - 1].pos).normalized;
+            if (i < m_nodes.Count - 1)
+                dir += (m_nodes[i + 1].pos - m_nodes[i].pos).normalized;
+
+            Vector2 orthoDir = new Vector2(dir.y, -dir.x).normalized;
+
+            float angle = 0;
+            if (i > 0 && i < m_nodes.Count - 1)
+                angle = Vector2.SignedAngle(m_nodes[i].pos - m_nodes[i - 1].pos, m_nodes[i + 1].pos - m_nodes[i].pos) / 2.0f;
+            orthoDir /= Mathf.Cos(Mathf.Deg2Rad * angle);
+            orthoDir *= m_width / 2.0f;
+
+            vertices[2 * i] = m_nodes[i].pos + orthoDir;
+            vertices[2 * i + 1] = m_nodes[i].pos - orthoDir;
+        }
+
+        //triangles
+        for (int i = 0; i < m_nodes.Count - 1; i++)
+        {
+            tris[6 * i] = 2 * i;
+            tris[6 * i + 1] = 2 * i + 2;
+            tris[6 * i + 2] = 2 * i + 1;
+
+            tris[6 * i + 3] = 2 * i + 1;
+            tris[6 * i + 4] = 2 * i + 2;
+            tris[6 * i + 5] = 2 * i + 3;
+        }
+
+        if(vertices.Length > m_mesh.vertices.Length)
+        {
+            m_mesh.vertices = vertices;
+            m_mesh.triangles = tris;
+        }
+        else
+        {
+            m_mesh.triangles = tris;
+            m_mesh.vertices = vertices;
+        }
+        
+        m_meshFilter.mesh = m_mesh;
     }
 }
