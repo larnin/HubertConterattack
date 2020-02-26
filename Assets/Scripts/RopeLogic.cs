@@ -280,7 +280,11 @@ public class RopeLogic : MonoBehaviour
         int nbTriangles = m_nodes.Count * 2 - 2;
 
         Vector3[] vertices = new Vector3[nbVertices];
+        Vector2[] uv = new Vector2[nbVertices];
         int[] tris = new int[nbTriangles * 3];
+
+        float totalDist = 0;
+        float scale = 1 / m_width;
 
         //vertices
         for (int i = 0; i < m_nodes.Count; i++)
@@ -301,29 +305,39 @@ public class RopeLogic : MonoBehaviour
 
             vertices[2 * i] = m_nodes[i].pos + orthoDir;
             vertices[2 * i + 1] = m_nodes[i].pos - orthoDir;
+
+            if (i > 0)
+                totalDist += (m_nodes[i].pos - m_nodes[i - 1].pos).magnitude;
+
+            uv[2 * i].x = totalDist * scale;
+            uv[2 * i].y = 0;
+            uv[2 * i + 1].x = totalDist * scale;
+            uv[2 * i + 1].y = 1;
         }
 
         //triangles
         for (int i = 0; i < m_nodes.Count - 1; i++)
         {
             tris[6 * i] = 2 * i;
-            tris[6 * i + 1] = 2 * i + 2;
-            tris[6 * i + 2] = 2 * i + 1;
+            tris[6 * i + 1] = 2 * i + 1;
+            tris[6 * i + 2] = 2 * i + 2;
 
             tris[6 * i + 3] = 2 * i + 1;
-            tris[6 * i + 4] = 2 * i + 2;
-            tris[6 * i + 5] = 2 * i + 3;
+            tris[6 * i + 4] = 2 * i + 3;
+            tris[6 * i + 5] = 2 * i + 2;
         }
 
         if(vertices.Length > m_mesh.vertices.Length)
         {
             m_mesh.vertices = vertices;
+            m_mesh.uv = uv;
             m_mesh.triangles = tris;
         }
         else
         {
             m_mesh.triangles = tris;
             m_mesh.vertices = vertices;
+            m_mesh.uv = uv;
         }
         
         m_meshFilter.mesh = m_mesh;
